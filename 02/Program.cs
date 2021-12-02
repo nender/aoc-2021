@@ -25,6 +25,23 @@ Direction parseDirection(string Input) =>
 
 var input = GetInput();
 
+var x = 0;
+var y = 0;
+foreach (var order in input) {
+    switch (order.Direction) {
+        case Direction.forward:
+            x += order.Magnitude;
+            break;
+        case Direction.down:
+            y += order.Magnitude;
+            break;
+        case Direction.up:
+            y -= order.Magnitude;
+            break;
+    }
+}
+Console.WriteLine($"Final depth: {y}, distance: {x}");
+Console.WriteLine($"Checksum: {x*y}");
 
 record struct Order(Direction Direction, int Magnitude);
 enum Direction {
