@@ -27,12 +27,20 @@ int[] CountBits(IEnumerable<ushort> inputs) {
     return bitCounts;
 }
 
+int GetThreshold(int count) {
+    if (count % 2 == 0) {
+        return count / 2;
+    } else {
+        return count / 2 + 1; 
+    }
+}
+
 void SolvePartOne(List<ushort> inputs) {
     var bitCounts = CountBits(inputs);
 
     var gamma = 0;
     var epsilon = 0;
-    var threshold = inputs.Count / 2;
+    var threshold = GetThreshold(inputs.Count);
     for (var i = 0; i < bitCounts.Length; i++) {
         if (bitCounts[i] > threshold) {
             gamma ^= 1<<i;
@@ -44,7 +52,7 @@ void SolvePartOne(List<ushort> inputs) {
     Console.WriteLine("gamma*epsilon=" + gamma*epsilon);
 }
 
-void SolvePartTwo(List<ushort> inputs) {
+int FilterValues(IEnumerable<ushort> inputs, Func<bool, bool, bool> filter) {
     var candidates = inputs.ToArray();
     var bitIndex = 0;
     var idx = Globals.inputSize - 1;
@@ -58,21 +66,34 @@ void SolvePartTwo(List<ushort> inputs) {
             }
         }
 
-        // todo: fix corner case where ties should go to 1 bit / handle odd case properly
-        var threshold = candidates.Length / 2;
-        var setIsMostCommon = bitCount > threshold;
+        var threshold = GetThreshold(candidates.Length);
+        var setIsMostCommon = bitCount >= threshold;
 
         candidates = candidates
             .Where(x => { 
                 var bitIsSet = (x & 1<<(idx-bitIndex)) != 0;
-                return !(bitIsSet^setIsMostCommon);
+                return filter(bitIsSet, setIsMostCommon);
             })
             .ToArray();
 
         bitIndex += 1;
     }
 
-    var value = candidates[0];
+    return candidates[0];
+}
+
+void SolvePartTwo(List<ushort> inputs) {
+    var oxygenRating = FilterValues(
+        inputs,
+        filter: (x,y) => !(x^y)
+    );
+
+    var co2Rating = FilterValues(
+        inputs,
+        filter: (x,y) => x != y
+    );
+
+    Console.WriteLine("Rating checksum: " + oxygenRating * co2Rating);
 }
 
 var inputs = GetInput();
@@ -80,5 +101,5 @@ SolvePartOne(inputs);
 SolvePartTwo(inputs);
 
 static class Globals {
-    public const int inputSize = 5;
+    public const int inputSize = 12;
 }
