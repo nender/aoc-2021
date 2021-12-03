@@ -13,7 +13,7 @@
 }
 
 int[] CountBits(IEnumerable<ushort> inputs) {
-    const int bitCount = 12;
+    const int bitCount = Globals.inputSize;
     var bitCounts = new int[bitCount];
     foreach (var reading in inputs) {
         for (var i = 0; i < bitCount; i++) {
@@ -47,21 +47,26 @@ void SolvePartOne(List<ushort> inputs) {
 void SolvePartTwo(List<ushort> inputs) {
     var candidates = inputs.ToArray();
     var bitIndex = 0;
+    var idx = Globals.inputSize - 1;
 
     while (candidates.Length > 1) {
         var bitCount = 0;
         foreach (var candidate in candidates) {
-            var bitIsSet = (candidate & 1<<bitIndex) != 0;
+            var bitIsSet = (candidate & 1<<(idx-bitIndex)) != 0;
             if (bitIsSet) {
                 bitCount += 1;
             }
         }
 
+        // todo: fix corner case where ties should go to 1 bit / handle odd case properly
         var threshold = candidates.Length / 2;
-        var filter = bitCount > threshold ? 1 : 0;
+        var setIsMostCommon = bitCount > threshold;
 
         candidates = candidates
-            .Where(x => (x & 1<<bitIndex) == filter)
+            .Where(x => { 
+                var bitIsSet = (x & 1<<(idx-bitIndex)) != 0;
+                return !(bitIsSet^setIsMostCommon);
+            })
             .ToArray();
 
         bitIndex += 1;
@@ -73,3 +78,7 @@ void SolvePartTwo(List<ushort> inputs) {
 var inputs = GetInput();
 SolvePartOne(inputs);
 SolvePartTwo(inputs);
+
+static class Globals {
+    public const int inputSize = 5;
+}
