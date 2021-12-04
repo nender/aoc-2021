@@ -35,18 +35,40 @@
 }
 
 (var draws, var boards) = GetInput();
-Console.WriteLine($"{draws.Count()} draws, {boards.Count()} boards");
+SolvePartOne(draws, boards);
+SolvePartTwo(draws, boards);
 
-foreach (var draw in draws) {
-    foreach (var board in boards) {
-        board.Mark(draw);
-        if (board.HasBingo) {
-            Console.WriteLine("Bingo:" + board.UnmarkedSum() * draw);
-            return;
+void SolvePartOne(IEnumerable<int> draws, IEnumerable<Board> boards) {
+    foreach (var draw in draws) {
+        foreach (var board in boards) {
+            board.Mark(draw);
+            if (board.HasBingo) {
+                Console.WriteLine("Bingo:" + board.UnmarkedSum() * draw);
+                return;
+            }
         }
     }
 }
 
+void SolvePartTwo(IEnumerable<int> draws, IEnumerable<Board> boards) {
+    var candidateBoards = boards;
+    foreach (var draw in draws) {
+        var losingBoards = new List<Board>();
+        foreach (var board in candidateBoards) {
+            board.Mark(draw);
+            if (board.HasBingo) {
+                if (candidateBoards.Count() == 1) {
+                    Console.WriteLine("Losing Bingo:" + board.UnmarkedSum() * draw);
+                    return;
+                }
+            } else {
+                losingBoards.Add(board);
+            }
+        }
+
+        candidateBoards = losingBoards;
+    }
+}
 struct Board {
     (int, bool)[][] values;
 
