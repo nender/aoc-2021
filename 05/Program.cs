@@ -26,13 +26,18 @@ Dictionary<(int, int), int> CreateWorld(IEnumerable<Line> lines) {
 
     foreach (var line in lines) {
         var sorted = new[] {line.start, line.end}
-            .OrderBy(x => x.x + x.y)
+            .OrderBy(x => x.x)
             .ToArray();
 
         var (x0, y0) = sorted[0];
         var (x1, y1) = sorted[1];
 
         if (x0 == x1) {
+            if (y0 > y1) {
+                Swap(ref x0, ref x1);
+                Swap(ref y0, ref y1);
+            }
+
             for (var y = y0; y <= y1; y++) {
                 world.CountOccurance((x1, y));
             }
@@ -41,7 +46,8 @@ Dictionary<(int, int), int> CreateWorld(IEnumerable<Line> lines) {
                 world.CountOccurance((x, y0));
             }
         } else {
-            for (var (x, y) = (x0, y0); x <= x1 && y <= y1; x++,y++) {
+            var slope = y0 < y1 ? 1 : -1;
+            for (var (x, y) = (x0, y0); x <= x1; x++,y+=slope) {
                 world.CountOccurance((x, y));
             }
         }
@@ -62,16 +68,23 @@ void SolvePartTwo(IEnumerable<Line> lines) {
     var world = CreateWorld(lines);
 
     var count = world.Values.Where(x => x > 1).Count();
+    var intersects = world.Where(x => x.Value > 1);
     Console.WriteLine($"Part two: world has {count} intersections");
+}
+
+void Swap<T>(ref T a, ref T b) {
+    T temp = a;
+    a = b;
+    b = temp;
 }
 
 var lines = GetInput();
 SolvePartOne(lines);
 SolvePartTwo(lines);
 
-record Line((int x, int y) start, (int x, int y) end);
+public record struct Line((int x, int y) start, (int x, int y) end);
 
-public static class DictionaryExtension {
+public static class Extensions {
     public static void CountOccurance<K>(this Dictionary<K, int> dict, K key) {
             if (dict.ContainsKey(key)) {
                 dict[key] += 1;
