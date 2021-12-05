@@ -21,41 +21,53 @@
     return ventLine;
 }
 
-// (int, int) Min((int, int) a, (int, int) b) {
-//     var (x0, y0) = a;
-//     var (x1, y1) = b;
-//     if ( (x0 + y0) > (x1 + y1) ) {
-//         return b;
-//     } else {
-//         return a ;
-//     }
-// }
+Dictionary<(int, int), int> CreateWorld(IEnumerable<Line> lines) {
+    var world = new Dictionary<(int, int), int>();
 
-var lines = GetInput()
-    .Where(l => l.start.x == l.end.x || l.start.y == l.end.y );
+    foreach (var line in lines) {
+        var sorted = new[] {line.start, line.end}
+            .OrderBy(x => x.x + x.y)
+            .ToArray();
 
-var world = new Dictionary<(int, int), int>();
-foreach (var line in lines) {
-    var sorted = new[] {line.start, line.end}
-        .OrderBy(x => x.x + x.y)
-        .ToArray();
+        var (x0, y0) = sorted[0];
+        var (x1, y1) = sorted[1];
 
-    var (x0, y0) = sorted[0];
-    var (x1, y1) = sorted[1];
-
-    if (x0 == x1) {
-        for (var y = y0; y <= y1; y++) {
-            world.CountOccurance((x1, y));
-        }
-    } else {
-        for (var x = x0; x <= x1; x++) {
-            world.CountOccurance((x, y0));
+        if (x0 == x1) {
+            for (var y = y0; y <= y1; y++) {
+                world.CountOccurance((x1, y));
+            }
+        } else if (y0 == y1) {
+            for (var x = x0; x <= x1; x++) {
+                world.CountOccurance((x, y0));
+            }
+        } else {
+            for (var (x, y) = (x0, y0); x <= x1 && y <= y1; x++,y++) {
+                world.CountOccurance((x, y));
+            }
         }
     }
+
+    return world;
 }
 
-var count = world.Values.Where(x => x > 1).Count();
-Console.WriteLine($"World has {count} intersections");
+void SolvePartOne(IEnumerable<Line> lines) {
+    var onlyAxisAligned = lines.Where(l => l.start.x == l.end.x || l.start.y == l.end.y );
+    var world = CreateWorld(onlyAxisAligned);
+
+    var count = world.Values.Where(x => x > 1).Count();
+    Console.WriteLine($"Part one: world has {count} intersections");
+}
+
+void SolvePartTwo(IEnumerable<Line> lines) {
+    var world = CreateWorld(lines);
+
+    var count = world.Values.Where(x => x > 1).Count();
+    Console.WriteLine($"Part two: world has {count} intersections");
+}
+
+var lines = GetInput();
+SolvePartOne(lines);
+SolvePartTwo(lines);
 
 record Line((int x, int y) start, (int x, int y) end);
 
