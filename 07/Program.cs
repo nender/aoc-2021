@@ -10,7 +10,9 @@ var maxCrab = crabs.Max();
 var minCost = int.MaxValue;
 var minIndex = int.MaxValue;
 for (var i = minCrab; i <= maxCrab; i++) {
-    var cost = crabs.Select(x => Math.Abs(x - i))
+    var cost = crabs
+        .Select(x => Math.Abs(x - i))
+        .Select(x => x*(x+1) / 2)
         .Sum();
     
     if (cost < minCost) {
@@ -20,3 +22,4 @@ for (var i = minCrab; i <= maxCrab; i++) {
 }
 
 Console.WriteLine($"Min cost is: {minCost}");
+
