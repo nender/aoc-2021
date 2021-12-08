@@ -1,5 +1,4 @@
 (require '[clojure.string :as str])
-(use 'clojure.pprint)
 
 (defn split-on [pred coll]
     "Like split-with but does not include the delimiter in the second
@@ -7,9 +6,9 @@
     [(take-while pred coll)
         (->> (drop-while pred coll) rest)])
 
-(defn parse-input [codestr]
-    (->> (str/split codestr #" ")
-         (split-on (partial not= "|"))
+(defn parse-input [line]
+    (->> (str/split line #" ")
+         (split-on #(not= "|" %))
          (map #(map set %))))
 
 (defn get-input []
@@ -17,4 +16,11 @@
          (str/split-lines)
          (map parse-input)))
 
-(pprint (get-input))
+(println
+    "Solution to part one:"
+    (->> (get-input)
+         (map second)
+         flatten
+         (map count)
+         (filter #(contains? #{2 4 3 7} %))
+         (count)))
