@@ -1,4 +1,5 @@
 (require '[clojure.string :as str])
+(require '[clojure.set :as set])
 
 (defn split-on [pred coll]
     "Like split-with but does not include the delimiter in the second
@@ -16,12 +17,30 @@
          (str/split-lines)
          (map parse-input)))
 
-(defn decode-signal [[signals digits]]
-    ;; todo implement
-    0000)
+(defn first-length [n coll]
+    (->> coll
+         (filter #(= (count %) n))
+         first))
 
-(defn descramble-signal [key signal]
-    "abcdefg")
+(defn all-length [n coll]
+    (filter #(= (count %) n) coll))
+
+(defn derive-key [signals]
+    (let [one (first-length 2 signals)
+          seven (first-length 3 signals)
+          four (first-length 4 signals)
+          all-fives-union (apply set/intersection (all-length 5 signals))
+          a (first (set/difference seven one))
+          d (first
+                (set/union
+                    (set/difference all-fives-union seven)
+                    four))]
+
+        {a \a d \d}))
+
+(defn descramble-digit [key digit]
+    (->> (map #(get key %) digit)
+         set))
 
 (defn decode-digit [signal]
     "Given a descrambled signal, return the corresponding digit"
@@ -37,6 +56,13 @@
          #{\a \b \c \d \f \g} \9}
          (get signal)))
 
+(defn decode-signal [[signals digits]]
+ (let [key (derive-key signals)]
+    (->> (map #(descramble-digit key %) digits)
+         (map decode-digit)
+         str/join
+         Integer/parseInt)))
+
 (println
     "Solution to part one:"
     (->> input
@@ -46,14 +72,18 @@
          (filter #(contains? #{2 4 3 7} %))
          count))
 
+;; (println
+;;     "Solution to part two:"
+;;     (->> input
+;;          (map decode-signal)
+;;          (reduce +)))
+
 (println
-    "Solution to part two:"
-    (->> input
-         (map decode-signal)
-         (reduce +)))
+    (let [signals (first (first input))]
+        (derive-key signals)))
 
 ;; Digits and segment counts
-;; 1 - 1
+;; 1 - 2
 ;; 7 - 3
 ;; 2,3,5 - 5
 ;; 4 - 4
