@@ -76,4 +76,21 @@
           (+ nfcount fcount)
           (inc iter))))))
 
+(defn grid-size [grid]
+  (* (count (first grid))
+     (count grid)))
+
+(defn part-two [grid]
+  (loop [grid grid
+         fcount 0
+         iter 0]
+    (if (= fcount (grid-size grid))
+      iter
+      (let [[ngrid, nfcount] (step grid)]
+        (recur
+          ngrid
+          nfcount
+          (inc iter))))))
+
 (println "Part one:" (part-one (read-input "input.txt")))
+(println "Part two:" (part-two (read-input "input.txt")))
