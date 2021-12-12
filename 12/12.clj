@@ -27,24 +27,62 @@
         (let [node (first nodes)]
           (recur
             (rest nodes)
-            (assoc hash node (set (neighbors node pairs)))))))))
+            (assoc hash node (set (filter #(not= "start" %) (neighbors node pairs))))))))))
 
 (defn lowercase? [str]
   (not (some #(Character/isUpperCase %) str)))
 
-(defn walk [graph path to-visit]
-  (let [visited (set path) cur (peek path) neighbors (graph cur)]
-    (if (= "end" cur)
-      [path]
-      (if-let [unvisited (seq (set/difference neighbors (set (filter lowercase? visited))))]
-        (mapcat #(walk graph (conj path %) to-visit) unvisited)))))
+(defn eligible-neighbors-1 [neighbors visited]
+  (set/difference
+    neighbors
+    (set (filter lowercase? visited))))
 
-(defn valid-paths [{nodes :nodes graph :edges}]
-  (walk graph ["start"] (set (filter lowercase? nodes))))
+(def walk-1 (fn walk
+  ([{nodes :nodes graph :edges}]
+    (walk graph ["start"] (set (filter lowercase? nodes))))
+  ([graph path to-visit]
+    (let [visited (set path) cur (peek path) neighbors (graph cur)]
+      (if (= "end" cur)
+        [path]
+        (if-let [unvisited (seq (eligible-neighbors-1 neighbors visited))]
+          (mapcat #(walk graph (conj path %) to-visit) unvisited)))))))
+
+(defn eligible-neighbors-2 [neighbors visited dup]
+  (if-let [dup dup]
+    (set/difference
+      neighbors
+      (set (filter lowercase? visited)))
+    neighbors))
+
+(def walk-2 (fn walk
+  ([{nodes :nodes graph :edges}]
+    (walk graph ["start"] (set (filter lowercase? nodes)) nil))
+  ([graph path to-visit dup]
+    (let [visited (set path) cur (peek path) neighbors (graph cur)]
+      (if (= "end" cur)
+        (if (some lowercase? visited)
+          [path])
+        (if-let [unvisited (seq (eligible-neighbors-2 neighbors visited dup))]
+          (mapcat
+            #(walk
+               graph
+               (conj path %)
+               to-visit
+               (if-let [dup dup]
+                 dup
+                 (contains? (set (filter lowercase? visited)) %)))
+            unvisited)))))))
 
 (defn part-one [input]
-  (->> (graph input)
-       (valid-paths)
+  (->> input
+       walk-1
        count))
 
-(println "Part one:" (part-one (read-input "input.txt")))
+(defn part-two [input]
+  (->> input
+       walk-2
+       count))
+
+(let [graph (graph (read-input "input.txt"))]
+    (println "Part one:" (part-one graph))
+    (println "Part two:" (part-two graph)))
