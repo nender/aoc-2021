@@ -7,11 +7,15 @@
   [(take-while pred coll)
    (rest (drop-while pred coll))])
 
+(defn parse-rule [[pattern value]]
+  (let [charval (first value)]
+    [(seq pattern)
+     [[(first pattern) charval]
+      [charval (last pattern)]]]))
+
 (defn parse-rules [rules]
   (->> (map #(str/split % #" -> ") rules)
-       (map (fn [[pattern value]]
-              [(seq pattern)
-               (first value)]))
+       (map parse-rule)
        (into {})))
 
 (defn parse [filename]
@@ -22,19 +26,23 @@
          [(seq polymer)
           (parse-rules rules)]))))
 
-(defn evaluate-pair [rules pair]
-  (if-let [value (rules pair)]
-    [(first pair) value]
-    (if (nil? (second pair))
-      (first pair))))
+(defn evaluate-rule [[pair count] rules]
+  (if-let [[pair1 pair2] (rules pair)]
+    [[pair1 count] [pair2 count]]
+    [pair count]))
+
+(defn update-count [coll [k v]]
+  (if-let [count (coll k)]
+    (assoc coll k (+ v count))
+    (assoc coll k v)))
 
 (defn evaluate-rules-once [polymer rules]
-  (->> (partition 2 1 (repeat nil) polymer)
-       (map #(evaluate-pair rules %))
-       flatten))
+  (->> (map #(evaluate-rule % rules) polymer)
+       (apply concat)
+       (reduce update-count {})))
 
 (defn evaluate-rules [[polymer rules] n]
-  (loop [polymer polymer
+  (loop [polymer (frequencies (partition 2 1 polymer))
          n n]
     (if (= 0 n)
       polymer
@@ -42,7 +50,27 @@
         (evaluate-rules-once polymer rules)
         (dec n)))))
 
-(def input (parse "input.txt"))
-(println "Part one:"
-  (let [freq (sort (map second (frequencies (evaluate-rules input 10))))]
+(defn char-frequencies [l hist]
+  "Given last character and pair frequencies, compute single char frequencies."
+  (-> (->> (for [char (-> hist keys flatten set)]
+              ;; to avoid double-counting, only sum counts where char is _first_
+              ;; in pair key.
+              ;; NOTE: I cheated and looked up this trick, was stumped how to go
+              ;; from pair-frequencies to char-frequencies.
+              (let [keys (filter #(= char (first %)) (keys hist))
+                    count (apply + (map hist keys))]
+                [char count]))
+            flatten
+            (apply hash-map))
+      ;; because we skipped counting final char above, increment it by one
+      (update l inc)))
+
+(defn solve [[polymer :as input] n]
+  (let [last-char (last polymer)
+        hist (char-frequencies last-char (evaluate-rules input n))
+        freq (sort (map second hist))]
     (- (last freq) (first freq))))
+
+(let [input (parse "input.txt")]
+  (println "Part one:" (solve input 10))
+  (println "Part two:" (solve input 40)))
