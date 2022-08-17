@@ -1,1 +1,0 @@
-This solution works on the test input but is so slow that it can't solve the full input in a reasonable time. Need to come back to this with fresh eyes later.
