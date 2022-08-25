@@ -19,6 +19,10 @@
       \F "1111"}
   (update-vals seq)))
 
+(defn parse [s]
+  (-> (map char->bits s)
+      flatten))
+
 (defn bits->int [bits]
   (loop [bits (map #(Character/getNumericValue %) (reverse bits))
          x 1
@@ -32,8 +36,14 @@
 
 (defn decode-type [t]
   (case t
+    0 :sum
+    1 :prod
+    2 :min
+    3 :max
     4 :lit
-    t))
+    5 :gt
+    6 :lt
+    7 :eq))
 
 (defn read-header [bits]
   (if (< (count bits) 6)
@@ -91,7 +101,7 @@
              (decode-subpackets-bits rest n)) 
         \1 (let [[valbits rest] (split-at 11 rest)
                  n (bits->int valbits)]
-             (decode-subpackets-bits rest n))))))
+             (decode-subpackets-count rest n))))))
 
 (defn decode-packet [bits]
   (let [[v t rest] (read-header bits)
@@ -105,28 +115,38 @@
         [(assoc packet :sub sub)
          rest]))))
 
-(defn decode-packets [bits]
-  (loop [bits bits
-         packets []]
-    (if-let [[p rest] (decode-packet bits)]
-      (recur
-       rest
-       (conj packets p))
-      packets)))
-
-(defn version-sum [ast]
+(defn version-sum [root]
   (->> (tree-seq
         #(contains? % :sub)
         #(get % :sub)
-        ast)
+        root)
     (map :v)
     (apply +)))
 
-(defn parse [s]
-  (-> (map char->bits s)
-      flatten))
+(defn bool->int [b]
+  (if b 1 0))
+
+(defn evaluate [{t :t sub :sub :as p}]
+  (if (= t :lit)
+    (:val p)
+    (let [sub (map evaluate sub)]
+      (case t
+        :sum (apply + sub)
+        :prod (apply * sub)
+        :min (apply min sub)
+        :max (apply max sub)
+        :lt (bool->int (apply < sub))
+        :gt (bool->int (apply > sub))
+        :eq (bool->int (apply = sub))))))
 
 (def input (slurp "input.txt"))
-(println "Part one:"
-  (let [[root _] (decode-packet (parse input))]
-    (version-sum root)))
+(def root (first (decode-packet (parse input))))
+
+(defn evaluate-str [s]
+  (-> (parse s)
+      decode-packet
+      first
+      evaluate))
+
+(println "Part one:" (version-sum root))
+(println "Part two:" (evaluate root))
